@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { BackgroundBeams } from "../background-beams";
+import { FileIDCard } from "../file-id-card";
 import { 
   FaSearch, FaUpload, FaDownload, FaTrash, FaQrcode, 
   FaFolder, FaFile, FaSignOutAlt, FaFilter, FaEdit,
@@ -23,6 +24,7 @@ export default function DashboardPage() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(false);
+  const [uploadedFileData, setUploadedFileData] = useState(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -79,8 +81,10 @@ export default function DashboardPage() {
       });
 
       if (res.ok) {
+        const data = await res.json();
         setShowUploadModal(false);
         setUploadFile(null);
+        setUploadedFileData(data.file); // Show ID card with uploaded file data
         fetchFiles();
       } else {
         alert("Upload failed");
@@ -322,6 +326,14 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* File ID Card Modal */}
+      {uploadedFileData && (
+        <FileIDCard
+          file={uploadedFileData}
+          onClose={() => setUploadedFileData(null)}
+        />
       )}
     </div>
   );

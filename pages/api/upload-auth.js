@@ -54,9 +54,12 @@ export default async function handler(req, res) {
 
   await connectDB();
 
-  // Check if user is authenticated (optional)
+  // Require authentication
   const session = await getServerSession(req, res, authOptions);
-  const isAuthenticated = !!session?.user;
+  
+  if (!session?.user) {
+    return res.status(401).json({ message: "Authentication required. Please sign in to upload files." });
+  }
 
   const form = new IncomingForm({ maxFileSize: 100 * 1024 * 1024 });
 
@@ -123,51 +126,44 @@ export default async function handler(req, res) {
             tags: tags,
           };
 
-          // If authenticated, save to user's files array
-          if (isAuthenticated) {
-            try {
-              const user = await User.findOne({ email: session.user.email });
-              
-              if (!user) {
-                return res.status(404).json({ message: "User not found" });
-              }
-
-              // Add file to user's files array
-              user.files.push(fileMetadata);
-              
-              // Update storage used
-              user.storageUsed = (user.storageUsed || 0) + file.size;
-              
-              await user.save();
-
-              return res.status(200).json({
-                message: "File uploaded successfully",
-                file: fileMetadata,
-                storageUsed: formatFileSize(user.storageUsed),
-                authenticated: true,
-              });
-            } catch (dbError) {
-              console.error("MongoDB save error:", dbError);
-              return res.status(500).json({ message: "Error saving file to user account" });
+          // Save to authenticated user's files array
+          try {
+            const user = await User.findOne({ email: session.user.email });
+            
+            if (!user) {
+              return res.status(404).json({ message: "User not found" });
             }
-          } else {
-            // Guest upload - save to temporary File collection (24-hour expiry)
-            try {
-              const fileRecord = new File({
-                url: fileUrl,
-                public_id: result.public_id,
-              });
-              await fileRecord.save();
 
-              return res.status(200).json({
-                message: "File uploaded (expires in 24 hours)",
-                url: fileUrl,
-                authenticated: false,
+            // Check storage limit (5GB default)
+            const storageLimit = user.storageLimit || 5 * 1024 * 1024 * 1024; // 5GB in bytes
+            const currentUsage = user.storageUsed || 0;
+            
+            if (currentUsage + file.size > storageLimit) {
+              return res.status(413).json({ 
+                message: "Storage limit exceeded. Please upgrade your plan or delete some files.",
+                storageUsed: formatFileSize(currentUsage),
+                storageLimit: formatFileSize(storageLimit)
               });
-            } catch (dbError) {
-              console.error("MongoDB save error:", dbError);
-              return res.status(500).json({ message: "Error saving file info" });
             }
+
+            // Add file to user's files array
+            user.files.push(fileMetadata);
+            
+            // Update storage used
+            user.storageUsed = currentUsage + file.size;
+            
+            await user.save();
+
+            return res.status(200).json({
+              message: "File uploaded successfully",
+              file: fileMetadata,
+              storageUsed: formatFileSize(user.storageUsed),
+              storageLimit: formatFileSize(storageLimit),
+              authenticated: true,
+            });
+          } catch (dbError) {
+            console.error("MongoDB save error:", dbError);
+            return res.status(500).json({ message: "Error saving file to user account" });
           }
         }
       );

@@ -1,237 +1,106 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { FileUpload } from "./file-upload";
 import { BackgroundBeams } from "./background-beams";
-import { QRCodeCanvas } from "qrcode.react";
-import { BackgroundBeamsWithCollision } from "./background-beams-with-collision";
-import { FaLinkedin, FaTwitter, FaGithub, FaUserCircle } from "react-icons/fa";
+import { FaLinkedin, FaTwitter, FaGithub, FaLock } from "react-icons/fa";
 import Link from "next/link";
 
 export default function Home() {
-  const apiUrl = process.env.NEXT_PUBLIC_API;
   const { data: session, status } = useSession();
   const router = useRouter();
-
-  const [file, setFile] = useState(null);
-  const [url, setUrl] = useState("");
-  const [isUploading, setIsUploading] = useState(false);
   const [isClient, setIsClient] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-
-  const inputRef = useRef(null);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  const handleFileUpload = (files) => setFile(files[0]);
-
-  const handleUpload = async () => {
-    if (!file) return;
-    setIsUploading(true);
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        const uploadedUrl = data.url;
-
-        const shortenRes = await fetch(`${apiUrl}/shorten`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ originalUrl: uploadedUrl }),
-        });
-
-        if (shortenRes.ok) {
-          const shortenData = await shortenRes.json();
-          setUrl(`${apiUrl}/${shortenData.shortUrl}`);
-        } else {
-          setUrl(uploadedUrl);
-        }
-        setShowModal(true); 
-      } else {
-        console.error("File upload failed");
-      }
-    } catch (error) {
-      console.error("An error occurred during the upload process:", error);
-    } finally {
-      setIsUploading(false);
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.push("/dashboard");
     }
-  };
-
-  const handleCopy = async () => {
-    if (!url) return;
-
-    if (navigator.clipboard) {
-      await navigator.clipboard.writeText(url);
-    } else {
-      const tempInput = document.createElement("input");
-      tempInput.value = url;
-      document.body.appendChild(tempInput);
-      tempInput.select();
-      document.execCommand("copy");
-      document.body.removeChild(tempInput);
-    }
-  };
-
-  const handleCancelFile = () => {
-    setUrl("");
-  };
-
-  const handleGenerateMore = () => {
-    
-    setFile(null);
-    setUrl("");
-    setShowModal(false);
-    if (inputRef.current) inputRef.current.value = "";
-  };
+  }, [status, router]);
 
   if (!isClient) return null;
 
   const footerLinks = [
-    {
-      icon: <FaLinkedin className="h-6 w-6 " />,
-      href: "https://www.linkedin.com/in/ankitnayaketh/",
-    },
-    {
-      icon: <FaTwitter className="h-6 w-6 " />,
-      href: "https://x.com/AnkitNayak_eth",
-    },
-    {
-      icon: <FaGithub className="h-6 w-6 " />,
-      href: "https://github.com/AnkitNayak-eth",
-    },
+    { icon: <FaLinkedin className="h-6 w-6" />, href: "https://www.linkedin.com/in/ankitnayaketh/" },
+    { icon: <FaTwitter className="h-6 w-6" />, href: "https://x.com/AnkitNayak_eth" },
+    { icon: <FaGithub className="h-6 w-6" />, href: "https://github.com/AnkitNayak-eth" },
   ];
 
   return (
-    <div className="flex justify-center items-center h-[100vh] bg-neutral-950 relative font-mono">
-      {/* Top Navigation */}
+    <div className="flex justify-center items-center min-h-screen bg-neutral-950 relative font-mono py-12">
       <div className="absolute top-0 right-0 z-30 p-4">
-        {status === "authenticated" ? (
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition"
-          >
-            <FaUserCircle /> Dashboard
+        <div className="flex gap-2">
+          <Link href="/login" className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition">
+            Login
           </Link>
-        ) : (
-          <div className="flex gap-2">
-            <Link
-              href="/login"
-              className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition"
-            >
-              Login
-            </Link>
-            <Link
-              href="/register"
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition"
-            >
-              Sign Up
-            </Link>
-          </div>
-        )}
+          <Link href="/register" className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition">
+            Sign Up
+          </Link>
+        </div>
       </div>
 
-      <div className="w-full z-20 max-w-2xl p-4 -mt-32 ">
-        <h1 className="relative p-8 z-10 text-5xl lg:text-7xl bg-clip-text text-transparent bg-gradient-to-b from-neutral-200 to-neutral-600 text-center font-sans font-bold">
+      <div className="w-full z-20 max-w-6xl p-4">
+        <h1 className="text-5xl lg:text-7xl bg-clip-text text-transparent bg-gradient-to-b from-neutral-200 to-neutral-600 text-center font-sans font-bold mb-4">
           AJ STUDIOZ
         </h1>
-        <p className="text-neutral-400 max-w-lg mx-auto my-2 text-base text-center relative z-10">
-          A Secure and Seamless File Sharing App.<br></br> Upload files (up to
-          100MB), Files expire automatically within 24 hours, ensuring privacy
-          and safety.
+        <p className="text-neutral-400 max-w-2xl mx-auto text-lg text-center mb-12">
+          Advanced Secure File Storage & Document Verification System
         </p>
-        <div className="flex flex-col items-center justify-center mt-8">
-          <FileUpload
-            onChange={handleFileUpload}
-            ref={inputRef}
-            onCancel={handleCancelFile}
-          />
-          <button
-            onClick={handleUpload}
-            disabled={isUploading || !file}
-            className={`mt-4 py-2 px-6 bg-indigo-600 text-white font-semibold rounded-lg transition duration-300 flex items-center justify-center ${
-              isUploading || !file
-                ? "opacity-50 cursor-not-allowed"
-                : "hover:bg-indigo-700"
-            }`}
-          >
-            {isUploading ? (
-              <>
-                <span className="animate-spin mr-2 w-4 h-4 border-2 border-t-transparent border-indigo-600 border-solid rounded-full"></span>
-                Uploading...
-              </>
-            ) : (
-              "Upload"
-            )}
-          </button>
-          <nav className="flex flex-row m-8 items-center gap-8">
+        
+        <div className="flex flex-col items-center space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-5xl">
+            <div className="bg-neutral-900/50 backdrop-blur-sm border border-neutral-800 rounded-xl p-6 hover:border-indigo-500 transition">
+              <div className="text-indigo-500 text-4xl mb-4">🔒</div>
+              <h3 className="text-white font-semibold text-lg mb-2">Secure Storage</h3>
+              <p className="text-neutral-400 text-sm">Military-grade encrypted file storage</p>
+            </div>
+            <div className="bg-neutral-900/50 backdrop-blur-sm border border-neutral-800 rounded-xl p-6 hover:border-purple-500 transition">
+              <div className="text-purple-500 text-4xl mb-4">📱</div>
+              <h3 className="text-white font-semibold text-lg mb-2">QR Verification</h3>
+              <p className="text-neutral-400 text-sm">Instant document verification</p>
+            </div>
+            <div className="bg-neutral-900/50 backdrop-blur-sm border border-neutral-800 rounded-xl p-6 hover:border-pink-500 transition">
+              <div className="text-pink-500 text-4xl mb-4">☁️</div>
+              <h3 className="text-white font-semibold text-lg mb-2">Cloud Management</h3>
+              <p className="text-neutral-400 text-sm">5GB free storage</p>
+            </div>
+            <div className="bg-neutral-900/50 backdrop-blur-sm border border-neutral-800 rounded-xl p-6 hover:border-green-500 transition">
+              <div className="text-green-500 text-4xl mb-4">⚡</div>
+              <h3 className="text-white font-semibold text-lg mb-2">Lightning Fast</h3>
+              <p className="text-neutral-400 text-sm">Up to 100MB per file</p>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-indigo-900/30 via-purple-900/30 to-pink-900/30 backdrop-blur-sm border border-indigo-500/50 rounded-2xl p-12 w-full max-w-3xl">
+            <div className="flex items-center justify-center mb-6">
+              <FaLock className="text-indigo-400 text-6xl" />
+            </div>
+            <h2 className="text-white text-3xl font-bold text-center mb-4">Authentication Required</h2>
+            <p className="text-neutral-300 text-center mb-8 text-lg">
+              Sign up or log in to access file storage, QR verification, and document management with ID card generation.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/register" className="px-10 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-lg transition shadow-lg text-center">
+                🚀 Create Free Account
+              </Link>
+              <Link href="/login" className="px-10 py-4 bg-neutral-800 hover:bg-neutral-700 text-white font-bold rounded-lg transition shadow-lg text-center">
+                Sign In
+              </Link>
+            </div>
+          </div>
+        </div>
+        
+        <nav className="flex flex-row mt-12 items-center justify-center gap-8">
           {footerLinks.map((link, index) => (
-            <a
-              href={link.href}
-              key={index}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex text-white items-center gap-1.5 transform hover:scale-150 transition-transform duration-300 ease-in-out"
-            >
-              <span>{link.icon}</span>
+            <a key={index} href={link.href} target="_blank" rel="noopener noreferrer" className="text-white transform hover:scale-150 transition-transform duration-300">
+              {link.icon}
             </a>
           ))}
         </nav>
-        </div>
-        
       </div>
-
-      {showModal && (
-        <div className="fixed flex inset-0 bg-black bg-opacity-60 justify-center items-center z-50">
-          <BackgroundBeamsWithCollision className="flex-col relative w-full h-full  bg-black p-6 rounded-2xl shadow-2xl max-w-md overflow-hidden animate-border-color">
-
-            <h2 className="text-3xl font-extrabold mb-4 text-center text-white">
-              File Uploaded Successfully!
-            </h2>
-
-            <div className="flex justify-center mb-6">
-              <div className="p-[0.4rem] bg-white rounded-lg shadow-md">
-                <QRCodeCanvas value={url} size={160} className="rounded" />
-              </div>
-            </div>
-
-            <p className="text-white text-sm text-center mb-6 leading-relaxed">
-              Your file has been uploaded, and a shareable link has been
-              generated. Copy the link or scan the QR code to access the file.
-            </p>
-            <div className="bg-gray-100 p-3 rounded-md mb-4">
-              <p className="text-center font-mono text-sm text-black break-all">
-                <strong>🔗 URL:</strong> {url}
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-3 items-center">
-              <button
-                onClick={handleCopy}
-                className="w-full py-2 px-4 bg-teal-500 text-white font-semibold rounded-lg hover:bg-teal-600 focus:ring-2 focus:ring-teal-400 focus:ring-opacity-50 transition duration-300"
-              >
-                📋 Copy URL
-              </button>
-              <button
-                onClick={handleGenerateMore}
-                className="w-full py-2 px-4 bg-indigo-500 text-white font-semibold rounded-lg hover:bg-indigo-600 focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-50 transition duration-300"
-              >
-                ➕ Upload Another
-              </button>
-            </div>
-          </BackgroundBeamsWithCollision>
-        </div>
-      )}
 
       <BackgroundBeams />
     </div>
