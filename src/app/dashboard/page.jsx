@@ -1,14 +1,15 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { BackgroundBeams } from "../background-beams";
 import { FileIDCard } from "../file-id-card";
-import QRCodeStyling from "qr-code-styling";
+import { CompactIDCard } from "../compact-id-card";
 import { 
   FaSearch, FaUpload, FaDownload, FaTrash, FaQrcode, 
   FaFolder, FaFile, FaSignOutAlt, FaFilter, FaEdit,
-  FaFilePdf, FaFileWord, FaFileExcel, FaFileImage, FaFileArchive
+  FaFilePdf, FaFileWord, FaFileExcel, FaFileImage, FaFileArchive,
+  FaFileVideo, FaFileAudio, FaFileCode, FaList, FaTh
 } from "react-icons/fa";
 import Image from "next/image";
 
@@ -21,12 +22,13 @@ export default function DashboardPage() {
   const [selectedFolder, setSelectedFolder] = useState("all");
   const [sortBy, setSortBy] = useState("date");
   const [storageInfo, setStorageInfo] = useState({ used: "0 B", limit: "5 GB" });
-  const [showQRModal, setShowQRModal] = useState(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(false);
   const [uploadedFileData, setUploadedFileData] = useState(null);
-  const qrModalRef = useRef(null);
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  const [fileCategory, setFileCategory] = useState('all'); // 'all', 'documents', 'images', 'videos', 'audio', 'archives'
+  const [showCompactCard, setShowCompactCard] = useState(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -65,44 +67,6 @@ export default function DashboardPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, selectedFolder, sortBy]);
-
-  useEffect(() => {
-    if (showQRModal && qrModalRef.current) {
-      const qrCode = new QRCodeStyling({
-        width: 280,
-        height: 280,
-        type: "canvas",
-        data: showQRModal.qrUrl,
-        image: "/logo.svg",
-        dotsOptions: {
-          color: "#6366f1",
-          type: "rounded",
-        },
-        backgroundOptions: {
-          color: "#ffffff",
-        },
-        cornersSquareOptions: {
-          color: "#a855f7",
-          type: "extra-rounded",
-        },
-        cornersDotOptions: {
-          color: "#ec4899",
-          type: "dot",
-        },
-        imageOptions: {
-          crossOrigin: "anonymous",
-          margin: 6,
-          imageSize: 0.4,
-        },
-        qrOptions: {
-          errorCorrectionLevel: "H",
-        },
-      });
-
-      qrModalRef.current.innerHTML = "";
-      qrCode.append(qrModalRef.current);
-    }
-  }, [showQRModal]);
 
   const handleFileUpload = async () => {
     if (!uploadFile) return;
@@ -162,9 +126,27 @@ export default function DashboardPage() {
       case "XLS": return <FaFileExcel className="text-green-500 text-2xl" />;
       case "IMAGE": return <FaFileImage className="text-purple-500 text-2xl" />;
       case "ZIP": return <FaFileArchive className="text-yellow-500 text-2xl" />;
+      case "VIDEO": return <FaFileVideo className="text-pink-500 text-2xl" />;
+      case "AUDIO": return <FaFileAudio className="text-indigo-500 text-2xl" />;
+      case "CODE": return <FaFileCode className="text-cyan-500 text-2xl" />;
       default: return <FaFile className="text-gray-500 text-2xl" />;
     }
   };
+
+  const getFileCategory = (type) => {
+    const upperType = type.toUpperCase();
+    if (['PDF', 'DOC', 'TXT', 'CSV'].includes(upperType)) return 'documents';
+    if (['IMAGE', 'PNG', 'JPG', 'JPEG', 'GIF', 'SVG'].includes(upperType)) return 'images';
+    if (['VIDEO', 'MP4', 'AVI', 'MOV'].includes(upperType)) return 'videos';
+    if (['AUDIO', 'MP3', 'WAV'].includes(upperType)) return 'audio';
+    if (['ZIP', 'RAR', '7Z'].includes(upperType)) return 'archives';
+    return 'other';
+  };
+
+  const filteredFiles = files.filter(file => {
+    if (fileCategory === 'all') return true;
+    return getFileCategory(file.type) === fileCategory;
+  });
 
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString("en-GB", {
@@ -219,6 +201,60 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-8">
+        {/* Category Filters */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-white">File Categories</h2>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 rounded-lg transition ${
+                  viewMode === 'grid'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-neutral-800 text-neutral-400 hover:text-white'
+                }`}
+              >
+                <FaTh />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded-lg transition ${
+                  viewMode === 'list'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-neutral-800 text-neutral-400 hover:text-white'
+                }`}
+              >
+                <FaList />
+              </button>
+            </div>
+          </div>
+          
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {[
+              { key: 'all', label: 'All Files', icon: '📁', count: files.length },
+              { key: 'documents', label: 'Documents', icon: '📄', count: files.filter(f => getFileCategory(f.type) === 'documents').length },
+              { key: 'images', label: 'Images', icon: '🖼️', count: files.filter(f => getFileCategory(f.type) === 'images').length },
+              { key: 'videos', label: 'Videos', icon: '🎥', count: files.filter(f => getFileCategory(f.type) === 'videos').length },
+              { key: 'audio', label: 'Audio', icon: '🎵', count: files.filter(f => getFileCategory(f.type) === 'audio').length },
+              { key: 'archives', label: 'Archives', icon: '📦', count: files.filter(f => getFileCategory(f.type) === 'archives').length },
+            ].map((category) => (
+              <button
+                key={category.key}
+                onClick={() => setFileCategory(category.key)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition ${
+                  fileCategory === category.key
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg'
+                    : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white'
+                }`}
+              >
+                <span className="text-xl">{category.icon}</span>
+                <span className="font-semibold">{category.label}</span>
+                <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">{category.count}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Search and Actions */}
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="flex-1 relative">
@@ -249,9 +285,11 @@ export default function DashboardPage() {
         </div>
 
         {/* Files Grid */}
-        {files.length === 0 ? (
+        {filteredFiles.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-neutral-400 text-xl">No files uploaded yet</p>
+            <p className="text-neutral-400 text-xl">
+              {fileCategory === 'all' ? 'No files uploaded yet' : `No ${fileCategory} found`}
+            </p>
             <button
               onClick={() => setShowUploadModal(true)}
               className="mt-4 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition"
@@ -260,8 +298,8 @@ export default function DashboardPage() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {files.map((file) => (
+          <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
+            {filteredFiles.map((file) => (
               <div
                 key={file.id}
                 className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 hover:border-indigo-500 transition"
@@ -270,8 +308,8 @@ export default function DashboardPage() {
                   {getFileIcon(file.type)}
                   <div className="flex gap-2">
                     <button
-                      onClick={() => setShowQRModal(file)}
-                      className="p-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition"
+                      onClick={() => setShowCompactCard(file)}
+                      className="p-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition"
                     >
                       <FaQrcode />
                     </button>
@@ -303,48 +341,12 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* QR Modal */}
-      {showQRModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 rounded-2xl p-8 max-w-md w-full border-2 border-indigo-500/30 shadow-2xl">
-            <h2 className="text-2xl font-bold text-white mb-2 text-center bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
-              Document QR Code
-            </h2>
-            <p className="text-neutral-400 text-sm text-center mb-6">AJ STUDIOZ Branded Verification</p>
-            
-            <div className="flex justify-center mb-6">
-              <div className="bg-white p-4 rounded-xl shadow-xl">
-                <div ref={qrModalRef} className="flex items-center justify-center" />
-              </div>
-            </div>
-            
-            <div className="bg-neutral-800/50 rounded-lg p-3 mb-4">
-              <p className="text-neutral-400 text-xs text-center mb-1">Verification URL</p>
-              <p className="text-white text-sm text-center break-all font-mono">{showQRModal.qrUrl}</p>
-            </div>
-            
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(showQRModal.qrUrl);
-                }}
-                className="flex-1 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg transition font-semibold"
-              >
-                📋 Copy Link
-              </button>
-              <button
-                onClick={() => setShowQRModal(null)}
-                className="flex-1 px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition font-semibold"
-              >
-                Close
-              </button>
-            </div>
-            
-            <p className="text-xs text-neutral-500 text-center mt-4">
-              💎 Premium branded QR code with AJ STUDIOZ logo
-            </p>
-          </div>
-        </div>
+      {/* Compact ID Card */}
+      {showCompactCard && (
+        <CompactIDCard
+          file={showCompactCard}
+          onClose={() => setShowCompactCard(null)}
+        />
       )}
 
       {/* Upload Modal */}

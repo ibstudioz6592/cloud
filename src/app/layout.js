@@ -14,8 +14,11 @@ const geistMono = localFont({
 });
 
 export const metadata = {
-  title: "AJ STUDIOZ - Secure File Sharing app",
-  description: "AJ STUDIOZ is a secure, seamless file-sharing platform. Upload files up to 100MB, generate encrypted links, and ensure automatic deletion within 24 hours. Privacy guaranteed!",
+  title: "AJ STUDIOZ - Secure Cloud File Sharing",
+  description: "Share files securely with QR code verification - AJ STUDIOZ",
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({ children }) {
