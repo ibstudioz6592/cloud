@@ -1,10 +1,58 @@
 "use client";
 import { motion } from "framer-motion";
 import { FaCheckCircle, FaDownload, FaCopy, FaTimes, FaQrcode } from "react-icons/fa";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import QRCodeStyling from "qr-code-styling";
 
 export function FileIDCard({ file, onClose }) {
   const [copied, setCopied] = useState(false);
+  const qrRef = useRef(null);
+  const qrCodeInstance = useRef(null);
+
+  useEffect(() => {
+    if (!file?.qrUrl || !qrRef.current) return;
+
+    // Create branded QR code with AJ STUDIOZ styling
+    qrCodeInstance.current = new QRCodeStyling({
+      width: 220,
+      height: 220,
+      type: "canvas",
+      data: file.qrUrl,
+      image: "/logo.svg",
+      dotsOptions: {
+        color: "#6366f1", // Indigo-500
+        type: "rounded",
+      },
+      backgroundOptions: {
+        color: "#ffffff",
+      },
+      cornersSquareOptions: {
+        color: "#a855f7", // Purple-500
+        type: "extra-rounded",
+      },
+      cornersDotOptions: {
+        color: "#ec4899", // Pink-500
+        type: "dot",
+      },
+      imageOptions: {
+        crossOrigin: "anonymous",
+        margin: 6,
+        imageSize: 0.4,
+      },
+      qrOptions: {
+        errorCorrectionLevel: "H",
+      },
+    });
+
+    qrRef.current.innerHTML = "";
+    qrCodeInstance.current.append(qrRef.current);
+
+    return () => {
+      if (qrRef.current) {
+        qrRef.current.innerHTML = "";
+      }
+    };
+  }, [file]);
 
   const handleCopy = async (text) => {
     await navigator.clipboard.writeText(text);
@@ -64,21 +112,18 @@ export function FileIDCard({ file, onClose }) {
           <div className="p-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Left: QR Code */}
-              <div className="flex flex-col items-center justify-center bg-white rounded-xl p-6 shadow-inner">
-                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-4 rounded-lg mb-4">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={file.qrCode}
-                    alt="QR Code"
-                    className="w-48 h-48"
-                  />
+              <div className="flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 shadow-inner">
+                <div className="bg-white p-3 rounded-xl shadow-lg border-4 border-transparent bg-clip-padding" style={{
+                  borderImage: "linear-gradient(135deg, #6366f1, #a855f7, #ec4899) 1"
+                }}>
+                  <div ref={qrRef} className="flex items-center justify-center" />
                 </div>
-                <div className="flex items-center gap-2 text-indigo-600">
+                <div className="flex items-center gap-2 text-indigo-600 mt-4">
                   <FaQrcode className="text-2xl" />
-                  <span className="font-semibold">Scan to Verify</span>
+                  <span className="font-semibold">Branded QR Code</span>
                 </div>
-                <p className="text-xs text-neutral-500 mt-2 text-center">
-                  Instant verification with any QR scanner
+                <p className="text-xs text-neutral-600 mt-2 text-center">
+                  Scan with any QR scanner for instant verification
                 </p>
               </div>
 
