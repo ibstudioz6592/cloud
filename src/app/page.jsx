@@ -1,15 +1,18 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { FileUpload } from "./file-upload";
 import { BackgroundBeams } from "./background-beams";
 import { QRCodeCanvas } from "qrcode.react";
 import { BackgroundBeamsWithCollision } from "./background-beams-with-collision";
-import { FaLinkedin } from "react-icons/fa";
-import { FaTwitter } from "react-icons/fa";
-import { FaGithub } from "react-icons/fa";
+import { FaLinkedin, FaTwitter, FaGithub, FaUserCircle } from "react-icons/fa";
+import Link from "next/link";
 
 export default function Home() {
   const apiUrl = process.env.NEXT_PUBLIC_API;
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
   const [file, setFile] = useState(null);
   const [url, setUrl] = useState("");
@@ -111,9 +114,36 @@ export default function Home() {
 
   return (
     <div className="flex justify-center items-center h-[100vh] bg-neutral-950 relative font-mono">
+      {/* Top Navigation */}
+      <div className="absolute top-0 right-0 z-30 p-4">
+        {status === "authenticated" ? (
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition"
+          >
+            <FaUserCircle /> Dashboard
+          </Link>
+        ) : (
+          <div className="flex gap-2">
+            <Link
+              href="/login"
+              className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition"
+            >
+              Login
+            </Link>
+            <Link
+              href="/register"
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition"
+            >
+              Sign Up
+            </Link>
+          </div>
+        )}
+      </div>
+
       <div className="w-full z-20 max-w-2xl p-4 -mt-32 ">
         <h1 className="relative p-8 z-10 text-5xl lg:text-7xl bg-clip-text text-transparent bg-gradient-to-b from-neutral-200 to-neutral-600 text-center font-sans font-bold">
-          NextShare
+          AJ STUDIOZ
         </h1>
         <p className="text-neutral-400 max-w-lg mx-auto my-2 text-base text-center relative z-10">
           A Secure and Seamless File Sharing App.<br></br> Upload files (up to

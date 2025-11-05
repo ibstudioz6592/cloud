@@ -1,5 +1,6 @@
 import localFont from "next/font/local";
 import "./globals.css";
+import AuthProvider from "./providers";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -13,8 +14,8 @@ const geistMono = localFont({
 });
 
 export const metadata = {
-  title: "NextShare - Secure File Sharing app",
-  description: "NextShare is a secure, seamless file-sharing platform. Upload files up to 100MB, generate encrypted links, and ensure automatic deletion within 24 hours. Privacy guaranteed!",
+  title: "AJ STUDIOZ - Secure File Sharing app",
+  description: "AJ STUDIOZ is a secure, seamless file-sharing platform. Upload files up to 100MB, generate encrypted links, and ensure automatic deletion within 24 hours. Privacy guaranteed!",
 };
 
 export default function RootLayout({ children }) {
@@ -23,7 +24,7 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );
