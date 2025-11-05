@@ -30,6 +30,7 @@ export default function DashboardPage() {
     } else if (status === "authenticated") {
       fetchFiles();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, router]);
 
   const fetchFiles = async () => {
@@ -58,6 +59,7 @@ export default function DashboardPage() {
     if (status === "authenticated") {
       fetchFiles();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, selectedFolder, sortBy]);
 
   const handleFileUpload = async () => {
@@ -264,6 +266,7 @@ export default function DashboardPage() {
             <h2 className="text-2xl font-bold text-white mb-4 text-center">QR Code</h2>
             <div className="flex justify-center mb-4">
               {showQRModal.qrCode && (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img src={showQRModal.qrCode} alt="QR Code" className="w-64 h-64" />
               )}
             </div>

@@ -17,6 +17,7 @@ export default function VerifyDocumentPage() {
     if (docId) {
       fetchDocument();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docId]);
 
   const fetchDocument = async () => {
