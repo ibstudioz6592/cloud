@@ -5,11 +5,16 @@ import { useRouter } from "next/navigation";
 import { BackgroundBeams } from "../background-beams";
 import { FileIDCard } from "../file-id-card";
 import { CompactIDCard } from "../compact-id-card";
+import { AdvancedSearch } from "../advanced-search";
+import { BulkUpload } from "../bulk-upload";
+import { FilePreview } from "../file-preview";
+import { StorageAnalytics } from "../storage-analytics";
 import { 
   FaSearch, FaUpload, FaDownload, FaTrash, FaQrcode, 
   FaFolder, FaFile, FaSignOutAlt, FaFilter, FaEdit,
   FaFilePdf, FaFileWord, FaFileExcel, FaFileImage, FaFileArchive,
-  FaFileVideo, FaFileAudio, FaFileCode, FaList, FaTh
+  FaFileVideo, FaFileAudio, FaFileCode, FaList, FaTh, FaCloudUploadAlt,
+  FaChartPie, FaEye
 } from "react-icons/fa";
 import Image from "next/image";
 
@@ -29,6 +34,11 @@ export default function DashboardPage() {
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [fileCategory, setFileCategory] = useState('all'); // 'all', 'documents', 'images', 'videos', 'audio', 'archives'
   const [showCompactCard, setShowCompactCard] = useState(null);
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [showFilePreview, setShowFilePreview] = useState(null);
+  const [showStorageAnalytics, setShowStorageAnalytics] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -201,6 +211,44 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-8">
+        {/* Advanced Action Bar */}
+        <div className="mb-6 bg-neutral-900/50 border border-neutral-800 rounded-xl p-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => setShowUploadModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold rounded-lg transition"
+            >
+              <FaUpload />
+              <span className="hidden sm:inline">Upload File</span>
+            </button>
+            <button
+              onClick={() => setShowBulkUpload(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold rounded-lg transition"
+            >
+              <FaCloudUploadAlt />
+              <span className="hidden sm:inline">Bulk Upload</span>
+            </button>
+            <button
+              onClick={() => setShowAdvancedSearch(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white font-semibold rounded-lg transition"
+            >
+              <FaFilter />
+              <span className="hidden sm:inline">Advanced Search</span>
+            </button>
+            <button
+              onClick={() => setShowStorageAnalytics(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white font-semibold rounded-lg transition"
+            >
+              <FaChartPie />
+              <span className="hidden sm:inline">Analytics</span>
+            </button>
+            <div className="flex-1"></div>
+            <div className="text-neutral-400 text-sm">
+              <span className="font-semibold text-white">{filteredFiles.length}</span> files
+            </div>
+          </div>
+        </div>
+
         {/* Category Filters */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -308,14 +356,23 @@ export default function DashboardPage() {
                   {getFileIcon(file.type)}
                   <div className="flex gap-2">
                     <button
+                      onClick={() => setShowFilePreview(file)}
+                      className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition"
+                      title="Preview"
+                    >
+                      <FaEye />
+                    </button>
+                    <button
                       onClick={() => setShowCompactCard(file)}
                       className="p-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition"
+                      title="QR Code"
                     >
                       <FaQrcode />
                     </button>
                     <button
                       onClick={() => handleDelete(file.id)}
                       className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
+                      title="Delete"
                     >
                       <FaTrash />
                     </button>
@@ -346,6 +403,45 @@ export default function DashboardPage() {
         <CompactIDCard
           file={showCompactCard}
           onClose={() => setShowCompactCard(null)}
+        />
+      )}
+
+      {/* Advanced Search Modal */}
+      {showAdvancedSearch && (
+        <AdvancedSearch
+          onClose={() => setShowAdvancedSearch(false)}
+          onSearch={(filters) => {
+            setAdvancedFilters(filters);
+            // You can implement advanced filtering logic here
+          }}
+        />
+      )}
+
+      {/* Bulk Upload Modal */}
+      {showBulkUpload && (
+        <BulkUpload
+          onClose={() => setShowBulkUpload(false)}
+          onUploadComplete={() => {
+            fetchFiles();
+            setShowBulkUpload(false);
+          }}
+        />
+      )}
+
+      {/* File Preview Modal */}
+      {showFilePreview && (
+        <FilePreview
+          file={showFilePreview}
+          onClose={() => setShowFilePreview(null)}
+        />
+      )}
+
+      {/* Storage Analytics Modal */}
+      {showStorageAnalytics && (
+        <StorageAnalytics
+          files={files}
+          storageLimit={storageInfo.limit}
+          onClose={() => setShowStorageAnalytics(false)}
         />
       )}
 
